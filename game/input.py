@@ -1,3 +1,4 @@
+
 """TODO: Input handler — translates raw key / gamepad state into game commands.
 
 This module will be called once per frame (inside Game.update()) and will
@@ -22,7 +23,7 @@ Planned commands to support:
     attack     — on key-down: melee strike
     pause      — on key-down: open/close pause menu
 """
-
+import pygame
 class Commands:
     """Normalised command object returned by read_commands().
 
@@ -44,8 +45,14 @@ class Commands:
         """Reads the current input state and returns a Commands object."""
 
         # if key stroke is held down, move in that direction
-        move_left = pygame.key.get_pressed()[pygame.K_LEFT]
-        move_right = pygame.key.get_pressed()[pygame.K_RIGHT]
+        return Commands(
+            move_left=pygame.key.get_pressed()[pygame.K_LEFT],
+            move_right=pygame.key.get_pressed()[pygame.K_RIGHT],
+            jump=pygame.key.get_pressed()[pygame.K_SPACE],
+            attack=pygame.key.get_pressed()[pygame.K_z],
+            pause=pygame.key.get_pressed()[pygame.K_ESCAPE]
+        )
+        # if key stroke is pressed, jump or attack]
         
 
         

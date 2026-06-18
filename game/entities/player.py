@@ -8,8 +8,9 @@ import sys
 
 import pygame
 
-from game import config
+from game import config 
 from game.logger import get_logger
+from game import input
 
 logger = get_logger()
 
@@ -79,7 +80,13 @@ class Player:
             self.image = pygame.transform.flip(self.image, False, False)
 
     def update(self) -> None:
-        pass
+        command = input.Commands.read_commands()
+        if command.move_left:
+            self.move(-1)
+        elif command.move_right:
+            self.move(1)
+        else:
+            self.move(0)
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the player sprite on the given surface."""
