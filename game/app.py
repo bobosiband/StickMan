@@ -7,7 +7,9 @@ called from update() once those systems are implemented.
 import pygame
 
 from game.config import COLOUR_BG, FPS, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE
+from game.entities import player
 from game.entities.player import Player
+from game.input import read_commands
 from game.logger import get_logger
 
 logger = get_logger()
@@ -65,9 +67,13 @@ class Game:
 
     def _handle_events(self) -> None:
         """Process all pygame events queued since the last frame."""
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 self.running = False
+        
+        commands = read_commands(events)
+        self.player.update(commands)
 
     def update(self) -> None:
         """Update all game objects for this frame.
@@ -76,7 +82,7 @@ class Game:
         reading player input, running enemy AI, applying physics,
         testing collisions, and updating the score.
         """
-        self.player.update()
+        pass
 
     def draw(self) -> None:
         """Clear the screen, draw every visible object, then flip the buffer."""

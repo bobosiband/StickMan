@@ -44,13 +44,14 @@ class Player:
         # position the player at the bottom centre of the screen
         self.rect = self.image.get_rect()
         self.rect.midbottom = (config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT)
-
-        # feet should be exactly on the bottom edge of the screen, so adjust y position
-        self.rect.y -= self.height
         logger.info(f"Positioned player at {self.rect.topleft} (midbottom: {self.rect.midbottom}).")
 
         # read speed and attack cooldown from config
         self.speed = config.PLAYER_SPEED
+
+        # keep original for direction flipping
+        self._base_image = self.image
+        self._facing_left = False
 
 
     # ------------------------------------------------------------------
@@ -73,20 +74,24 @@ class Player:
         self.rect.x += direction * self.speed
         # Ensure the player does not move off the screen
         self.rect.x = max(0, min(self.rect.x, config.SCREEN_WIDTH - self.width))
-        # Flip the sprite horizontally if changing direction
-        if direction < 0:
-            self.image = pygame.transform.flip(self.image, True, False)
-        elif direction > 0:
-            self.image = pygame.transform.flip(self.image, False, False)
+        # Flip the sprite from the original when direction changes
+        if direction < 0 and not self._facing_left:
+            self._facing_left = True
+            self.image = pygame.transform.flip(self._base_image, True, False)
+        elif direction > 0 and self._facing_left:
+            self._facing_left = False
+            self.image = self._base_image
 
-    def update(self) -> None:
-        command = input.read_commands()
-        if command.move_left:
-            self.move(-1)
-        elif command.move_right:
-            self.move(1)
-        else:
-            self.move(0)
+    def update(self, commands) -> None:
+        direction = 0
+
+        if commands.move_left:
+            direction -= 1
+
+        if commands.move_right:
+            direction += 1
+
+        self.move(direction)
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the player sprite on the given surface."""

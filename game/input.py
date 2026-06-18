@@ -41,7 +41,7 @@ class Commands:
         self.attack = attack
         self.pause = pause
     
-def read_commands() -> Commands:
+def read_commands(events) -> Commands:
     """Reads the current input state and returns a Commands object."""
 
     # if key stroke is pressed, jump or attack]
@@ -52,7 +52,7 @@ def read_commands() -> Commands:
     )
 
     # One-frame actions
-    for event in pygame.event.get():
+    for event in events:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 cmds.jump = True
