@@ -10,12 +10,12 @@ from pathlib import Path
 SCREEN_WIDTH: int = 800
 SCREEN_HEIGHT: int = 600
 FPS: int = 60
-TITLE: str = "Deep Jungle"
+TITLE: str = "Stickman Game"
 
 # ---------------------------------------------------------------------------
 # Colours  (R, G, B)
 # ---------------------------------------------------------------------------
-COLOUR_BG: tuple[int, int, int] = (34, 85, 34)   # dark jungle green
+COLOUR_BG: tuple[int, int, int] = (255, 255, 255)   # dark jungle green
 
 # ---------------------------------------------------------------------------
 # Asset paths
@@ -30,4 +30,6 @@ STICKMAN_PATH: Path = ASSETS_DIR / "stickman.png"
 # ---------------------------------------------------------------------------
 # The sprite is scaled so its height matches this value; width scales
 # proportionally to preserve the aspect ratio.
-PLAYER_HEIGHT: int = 120  # pixels
+PLAYER_HEIGHT: int = 80  # pixels
+PLAYER_SPEED: int = 5  # pixels per frame
+

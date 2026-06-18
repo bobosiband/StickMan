@@ -22,3 +22,31 @@ Planned commands to support:
     attack     — on key-down: melee strike
     pause      — on key-down: open/close pause menu
 """
+
+class Commands:
+    """Normalised command object returned by read_commands().
+
+    Attributes:
+        move_left: True if the player is currently holding the left movement key.
+        move_right: True if the player is currently holding the right movement key.
+        jump: True if the player has just pressed the jump key this frame.
+        attack: True if the player has just pressed the attack key this frame.
+        pause: True if the player has just pressed the pause key this frame.
+    """
+    def __init__(self, move_left=False, move_right=False, jump=False, attack=False, pause=False):
+        self.move_left = move_left
+        self.move_right = move_right
+        self.jump = jump
+        self.attack = attack
+        self.pause = pause
+    
+    def read_commands() -> Commands:
+        """Reads the current input state and returns a Commands object."""
+
+        # if key stroke is held down, move in that direction
+        move_left = pygame.key.get_pressed()[pygame.K_LEFT]
+        move_right = pygame.key.get_pressed()[pygame.K_RIGHT]
+        
+
+        
+

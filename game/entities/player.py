@@ -8,7 +8,7 @@ import sys
 
 import pygame
 
-from game.config import PLAYER_HEIGHT, SCREEN_HEIGHT, SCREEN_WIDTH, STICKMAN_PATH
+from game import config
 from game.logger import get_logger
 
 logger = get_logger()
@@ -27,56 +27,35 @@ class Player:
     """
 
     def __init__(self) -> None:
-        self._load_sprite()
-
-        # Place the player: horizontally centred, feet on the ground.
-        self.rect: pygame.Rect = self.image.get_rect()
-        self.rect.centerx = SCREEN_WIDTH // 2
-        self.rect.bottom = SCREEN_HEIGHT
-
-    # ------------------------------------------------------------------
-    # Private helpers
-    # ------------------------------------------------------------------
-
-    def _load_sprite(self) -> None:
-        """Load stickman.png from disk and scale it to PLAYER_HEIGHT.
-
-        Preserves the image's aspect ratio.
-        Logs an error and exits cleanly if the file is missing.
         """
-        if not STICKMAN_PATH.exists():
-            logger.error(
-                "Asset not found: %s — place stickman.png in the assets/ folder",
-                STICKMAN_PATH,
-            )
-            pygame.quit()
-            sys.exit(1)
+        Load the stick man 
+        """
 
-        raw: pygame.Surface = pygame.image.load(str(STICKMAN_PATH)).convert_alpha()
-        original_w, original_h = raw.get_size()
+        image = pygame.image.load(config.STICKMAN_PATH).convert_alpha()
+        scale = config.PLAYER_HEIGHT / image.get_height()
+        new_size = (round(image.get_width() * scale), config.PLAYER_HEIGHT)
+        self.image = pygame.transform.scale(image, new_size)
 
-        # Scale height to PLAYER_HEIGHT; derive width to keep the aspect ratio.
-        scale_factor: float = PLAYER_HEIGHT / original_h
-        scaled_w: int = int(original_w * scale_factor)
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        logger.info(f"Loaded stickman sprite with size {self.width}x{self.height}.")
 
-        self.image: pygame.Surface = pygame.transform.smoothscale(
-            raw, (scaled_w, PLAYER_HEIGHT)
-        )
-        logger.info(
-            "Assets loaded — stickman scaled to %dx%d px", scaled_w, PLAYER_HEIGHT
-        )
+        # position the player at the bottom centre of the screen
+        self.rect = self.image.get_rect()
+        self.rect.midbottom = (config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT)
+
+        # feet should be exactly on the bottom edge of the screen, so adjust y position
+        self.rect.y -= self.height
+        logger.info(f"Positioned player at {self.rect.topleft} (midbottom: {self.rect.midbottom}).")
+
+        # read speed and attack cooldown from config
+        self.speed = config.PLAYER_SPEED
+
 
     # ------------------------------------------------------------------
     # Public interface (called every frame by Game)
     # ------------------------------------------------------------------
 
-    def update(self) -> None:
-        """TODO: Update player state each frame.
-
-        Will apply velocity, step the animation frame, check ground
-        collision, and tick down attack / hurt timers.
-        """
-        pass
 
     def move(self, direction: int) -> None:
         """TODO: Walk the player left or right.
@@ -87,21 +66,22 @@ class Player:
         Will update a velocity attribute and flip the sprite horizontally
         when the player changes direction.
         """
-        pass
+        # move player left or right, or stop if direction is 0
+        
+        # Change the player's x position based on the direction and speed
+        self.rect.x += direction * self.speed
+        # Ensure the player does not move off the screen
+        self.rect.x = max(0, min(self.rect.x, config.SCREEN_WIDTH - self.width))
+        # Flip the sprite horizontally if changing direction
+        if direction < 0:
+            self.image = pygame.transform.flip(self.image, True, False)
+        elif direction > 0:
+            self.image = pygame.transform.flip(self.image, False, False)
 
-    def attack(self) -> None:
-        """TODO: Trigger the player's melee attack.
-
-        Will guard against attacking while already mid-swing, start the
-        attack animation, and notify the combat system to test for hits
-        against nearby enemies.
-        """
+    def update(self) -> None:
         pass
 
     def draw(self, surface: pygame.Surface) -> None:
-        """Blit the stickman sprite onto *surface* at its current position.
-
-        Args:
-            surface: The pygame surface to draw onto (usually the screen).
-        """
+        """Draw the player sprite on the given surface."""
         surface.blit(self.image, self.rect)
+
