@@ -80,7 +80,7 @@ class Player:
             self.image = pygame.transform.flip(self.image, False, False)
 
     def update(self) -> None:
-        command = input.Commands.read_commands()
+        command = input.read_commands()
         if command.move_left:
             self.move(-1)
         elif command.move_right:

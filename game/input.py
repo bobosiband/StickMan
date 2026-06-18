@@ -41,19 +41,28 @@ class Commands:
         self.attack = attack
         self.pause = pause
     
-    def read_commands() -> Commands:
-        """Reads the current input state and returns a Commands object."""
+def read_commands() -> Commands:
+    """Reads the current input state and returns a Commands object."""
 
-        # if key stroke is held down, move in that direction
-        return Commands(
-            move_left=pygame.key.get_pressed()[pygame.K_LEFT],
-            move_right=pygame.key.get_pressed()[pygame.K_RIGHT],
-            jump=pygame.key.get_pressed()[pygame.K_SPACE],
-            attack=pygame.key.get_pressed()[pygame.K_z],
-            pause=pygame.key.get_pressed()[pygame.K_ESCAPE]
-        )
-        # if key stroke is pressed, jump or attack]
-        
+    # if key stroke is pressed, jump or attack]
+    keys = pygame.key.get_pressed()
+    cmds = Commands(
+        move_left=keys[pygame.K_LEFT] or keys[pygame.K_a],
+        move_right=keys[pygame.K_RIGHT] or keys[pygame.K_d],
+    )
 
-        
+    # One-frame actions
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                cmds.jump = True
+            elif event.key == pygame.K_f:
+                cmds.attack = True
+            elif event.key == pygame.K_ESCAPE:
+                cmds.pause = True
+
+    return cmds
+    
+
+    
 
