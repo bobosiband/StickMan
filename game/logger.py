@@ -6,7 +6,7 @@ underlying logger instance so the output stays in order.
 """
 import logging
 
-_LOGGER_NAME = "deep_jungle"
+_LOGGER_NAME = "stickman_game"
 
 
 def get_logger(name: str = _LOGGER_NAME) -> logging.Logger:
@@ -37,3 +37,4 @@ def get_logger(name: str = _LOGGER_NAME) -> logging.Logger:
     logger.addHandler(handler)
 
     return logger
+
