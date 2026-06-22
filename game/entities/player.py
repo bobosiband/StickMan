@@ -14,7 +14,18 @@ from game import input
 
 logger = get_logger()
 
-
+# states 
+class State:
+    """
+    player states 
+    bhorile is dead
+    """
+    IDLE = "idle"
+    WALKING = "walking"
+    JUMPING = ["up", "down"]
+    ATTACKING = "attacking"
+    INJURED = "inured"
+    DEAD = "Bhorile"
 class Player:
     """The player character (stickman).
 
@@ -32,11 +43,19 @@ class Player:
         Load the stick man 
         """
 
-        image = pygame.image.load(config.STICKMAN_PATH).convert_alpha()
-        scale = config.PLAYER_HEIGHT / image.get_height()
-        new_size = (round(image.get_width() * scale), config.PLAYER_HEIGHT)
-        self.image = pygame.transform.scale(image, new_size)
+        self.sprites = {}
 
+        # Loop through your config paths and pre-load/scale every state image
+        for state, path in config.STATE_PATHS.items():
+            raw_image = pygame.image.load(path).convert_alpha()
+            scale = config.PLAYER_HEIGHT / raw_image.get_height()
+            new_size = (round(raw_image.get_width() * scale), config.PLAYER_HEIGHT)
+            
+            # Save the scaled image to our dictionary
+            self.sprites[state] = pygame.transform.scale(raw_image, new_size)
+
+        self.state = State.IDLE
+        self.image = self.sprites[self.state]
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         logger.info(f"Loaded stickman sprite with size {self.width}x{self.height}.")
@@ -53,11 +72,16 @@ class Player:
         self._base_image = self.image
         self._facing_left = False
 
+        # set the initial state to idle
+        self.state = State.IDLE
+
+        # other types of images for different states will be added later, for now we just have one
+
+
 
     # ------------------------------------------------------------------
     # Public interface (called every frame by Game)
     # ------------------------------------------------------------------
-
 
     def move(self, direction: int) -> None:
         """TODO: Walk the player left or right.
@@ -82,6 +106,8 @@ class Player:
             self._facing_left = False
             self.image = self._base_image
 
+    
+
     def update(self, commands) -> None:
         direction = 0
 
@@ -90,6 +116,11 @@ class Player:
 
         if commands.move_right:
             direction += 1
+
+        if direction != 0:
+            self.state = State.WALKING
+        else:
+            self.state = State.IDLE
 
         self.move(direction)
 

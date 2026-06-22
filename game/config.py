@@ -15,7 +15,7 @@ TITLE: str = "Stickman Game"
 # ---------------------------------------------------------------------------
 # Colours  (R, G, B)
 # ---------------------------------------------------------------------------
-COLOUR_BG: tuple[int, int, int] = (255, 255, 255)   # dark jungle green
+COLOUR_BG: tuple[int, int, int] = (255, 255, 255)   # dark jungle white
 
 # ---------------------------------------------------------------------------
 # Asset paths
@@ -25,6 +25,16 @@ COLOUR_BG: tuple[int, int, int] = (255, 255, 255)   # dark jungle green
 ASSETS_DIR: Path = Path(__file__).parent.parent / "assets"
 PLAYER_DIR = ASSETS_DIR / "player"
 STICKMAN_PATH: Path = PLAYER_DIR / "normal.png"
+STATE_PATHS = {
+    "idle": PLAYER_DIR / "normal.png",
+    "walking": PLAYER_DIR / "normal.png",
+    "jumping": PLAYER_DIR / "jump.png",
+    "attacking": PLAYER_DIR / "punch.png",
+    "injured": PLAYER_DIR / "damaged.png",
+    "dead": PLAYER_DIR / "damaged.png",
+}
+# other images for the stickman (jumping, attacking, injured) will be added later, for now we just have one
+
 
 # ---------------------------------------------------------------------------
 # Player

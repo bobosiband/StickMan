@@ -24,6 +24,7 @@ def read_commands(events) -> Commands:
     cmds = Commands(
         move_left=keys[pygame.K_LEFT] or keys[pygame.K_a],
         move_right=keys[pygame.K_RIGHT] or keys[pygame.K_d],
+
     )
 
     # One-frame actions
