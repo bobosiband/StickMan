@@ -22,10 +22,11 @@ class State:
     """
     IDLE = "idle"
     WALKING = "walking"
-    JUMPING = ["up", "down"]
+    JUMPING = "jumping"
     ATTACKING = "attacking"
     INJURED = "inured"
     DEAD = "Bhorile"
+
 class Player:
     """The player character (stickman).
 
@@ -53,7 +54,9 @@ class Player:
             
             # Save the scaled image to our dictionary
             self.sprites[state] = pygame.transform.scale(raw_image, new_size)
-
+        
+        logger.info(f"Loaded sprites dictionary keys: {list(self.sprites.keys())}")
+        
         self.state = State.IDLE
         self.image = self.sprites[self.state]
         self.width = self.image.get_width()
@@ -68,63 +71,101 @@ class Player:
         # read speed and attack cooldown from config
         self.speed = config.PLAYER_SPEED
 
-        # keep original for direction flipping
-        self._base_image = self.image
+        # Direction tracking
         self._facing_left = False
 
-        # set the initial state to idle
-        self.state = State.IDLE
-
-        # other types of images for different states will be added later, for now we just have one
-
-
+        # Physics tracking variables
+        self.velocity_y = 0.0
+        self.jump_force = config.PLAYER_JUMP_FORCE  # Recommend a negative integer like -15
+        self.gravity = config.GRAVITY            # Recommend a positive float like 0.8
+        self.is_grounded = True
 
     # ------------------------------------------------------------------
     # Public interface (called every frame by Game)
     # ------------------------------------------------------------------
 
-    def move(self, direction: int) -> None:
-        """TODO: Walk the player left or right.
+    def set_state(self, new_state: str) -> None:
+        """Changes the player state and swaps the displayed image."""
+        if self.state == new_state:
+            return  # Skip if the state hasn't actually changed
 
-        Args:
-            direction: -1 to move left, +1 to move right, 0 to stop.
-
-        Will update a velocity attribute and flip the sprite horizontally
-        when the player changes direction.
-        """
-        # move player left or right, or stop if direction is 0
+        self.state = new_state
         
-        # Change the player's x position based on the direction and speed
-        self.rect.x += direction * self.speed
-        # Ensure the player does not move off the screen
-        self.rect.x = max(0, min(self.rect.x, config.SCREEN_WIDTH - self.width))
-        # Flip the sprite from the original when direction changes
-        if direction < 0 and not self._facing_left:
-            self._facing_left = True
-            self.image = pygame.transform.flip(self._base_image, True, False)
-        elif direction > 0 and self._facing_left:
-            self._facing_left = False
-            self.image = self._base_image
+        # Grab the base image for this state
+        base_sprite = self.sprites[self.state]
+        
+        # Apply the correct direction flip immediately
+        if self._facing_left:
+            self.image = pygame.transform.flip(base_sprite, True, False)
+        else:
+            self.image = base_sprite
+            
+        # Update width/height if your different state sprites have different widths
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        
+        # Keep the bottom of the rectangle locked to the ground after resizing
+        bottom_center = self.rect.midbottom
+        self.rect = self.image.get_rect()
+        self.rect.midbottom = bottom_center
 
-    
+    def move(self, direction: list[int]) -> None:
+        """Handles movement calculation and physics equations."""
+        horizontal_direction = direction[0]
+        vertical_direction = direction[1]
+
+        # --- 1. Horizontal Movement ---
+        self.rect.x += horizontal_direction * self.speed
+        self.rect.x = max(0, min(self.rect.x, config.SCREEN_WIDTH - self.width))
+        
+        # Flip the current state's image if direction changes
+        if horizontal_direction < 0 and not self._facing_left:
+            self._facing_left = True
+            self.image = pygame.transform.flip(self.sprites[self.state], True, False)
+        elif horizontal_direction > 0 and self._facing_left:
+            self._facing_left = False
+            self.image = self.sprites[self.state]
+
+        # --- 2. Vertical Movement & Jumping Mechanics ---
+        if vertical_direction < 0 and self.is_grounded:
+            self.velocity_y = self.jump_force
+            self.is_grounded = False
+
+        # Apply continuous downward gravitational pull when airborne
+        if not self.is_grounded:
+            self.velocity_y += self.gravity
+            self.rect.y += round(self.velocity_y)
+
+        # --- 3. Ground Collision Checks ---
+        if self.rect.bottom >= config.SCREEN_HEIGHT:
+            self.rect.bottom = config.SCREEN_HEIGHT
+            self.velocity_y = 0.0
+            self.is_grounded = True
 
     def update(self, commands) -> None:
-        direction = 0
+        # direction = [x, y]
+        direction = [0, 0]
 
         if commands.move_left:
-            direction -= 1
-
+            direction[0] -= 1
         if commands.move_right:
-            direction += 1
+            direction[0] += 1
+        if commands.jump:
+            direction[1] -= 1
+        if commands.attack:
+            pass 
 
-        if direction != 0:
-            self.state = State.WALKING
-        else:
-            self.state = State.IDLE
-
+        # Calculate coordinates and position values first
         self.move(direction)
+
+        # Evaluate and process state machine textures after positions resolve
+        if not self.is_grounded:
+            self.set_state(State.JUMPING)
+        elif direction[0] != 0:
+            self.set_state(State.WALKING)
+        else:
+            self.set_state(State.IDLE)
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the player sprite on the given surface."""
         surface.blit(self.image, self.rect)
-

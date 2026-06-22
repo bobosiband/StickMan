@@ -44,3 +44,6 @@ STATE_PATHS = {
 PLAYER_HEIGHT: int = 120  # pixels
 PLAYER_SPEED: int = 5  # pixels per frame
 
+# Physics Constants
+PLAYER_JUMP_FORCE: int = -15  # Initial upward velocity burst (negative moves UP in Pygame)
+GRAVITY: float = 0.8         # Constant downward acceleration per frame
