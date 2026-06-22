@@ -114,7 +114,7 @@ class Player:
         horizontal_direction = direction[0]
         vertical_direction = direction[1]
 
-        # --- 1. Horizontal Movement ---
+        # Horizontal Movement 
         self.rect.x += horizontal_direction * self.speed
         self.rect.x = max(0, min(self.rect.x, config.SCREEN_WIDTH - self.width))
         
@@ -126,7 +126,7 @@ class Player:
             self._facing_left = False
             self.image = self.sprites[self.state]
 
-        # --- 2. Vertical Movement & Jumping Mechanics ---
+        # Vertical Movement & Jumping Mechanics 
         if vertical_direction < 0 and self.is_grounded:
             self.velocity_y = self.jump_force
             self.is_grounded = False
@@ -136,7 +136,7 @@ class Player:
             self.velocity_y += self.gravity
             self.rect.y += round(self.velocity_y)
 
-        # --- 3. Ground Collision Checks ---
+        # Ground Collision Checks
         if self.rect.bottom >= config.SCREEN_HEIGHT:
             self.rect.bottom = config.SCREEN_HEIGHT
             self.velocity_y = 0.0
