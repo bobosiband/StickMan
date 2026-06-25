@@ -8,14 +8,16 @@ class Commands:
         jump: True if the player has just pressed the jump key this frame.
         attack: True if the player has just pressed the attack key this frame.
         pause: True if the player has just pressed the pause key this frame.
+        duck: True if the player has just pressed the duck key this frame.
     """
-    def __init__(self, move_left=False, move_right=False, jump=False, attack=False, pause=False):
+    def __init__(self, move_left=False, move_right=False, jump=False, attack=False, pause=False, duck=False):
         self.move_left = move_left
         self.move_right = move_right
         self.jump = jump
         self.attack = attack
         self.pause = pause
-    
+        self.duck = duck  # Placeholder for ducking input, to be implemented later
+
 def read_commands(events) -> Commands:
     """Reads the current input state and returns a Commands object."""
 
@@ -24,7 +26,7 @@ def read_commands(events) -> Commands:
     cmds = Commands(
         move_left=keys[pygame.K_LEFT] or keys[pygame.K_a],
         move_right=keys[pygame.K_RIGHT] or keys[pygame.K_d],
-
+        duck=keys[pygame.K_DOWN] or keys[pygame.K_s]
     )
 
     # One-frame actions
