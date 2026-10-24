@@ -1,46 +1,71 @@
+"""Input abstraction.
+
+Dependency Inversion Principle: entities depend on the abstract
+:class:`InputReader`, not on pygame.  The concrete
+:class:`KeyboardInputReader` is the only place pygame key codes appear,
+so swapping in a replay reader or a gamepad reader won't touch any
+gameplay code.
+"""
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
 import pygame
+
+
+@dataclass
 class Commands:
-    """Normalised command object returned by read_commands().
+    """A normalised snapshot of what the player is asking for this frame."""
 
-    Attributes:
-        move_left: True if the player is currently holding the left movement key.
-        move_right: True if the player is currently holding the right movement key.
-        jump: True if the player has just pressed the jump key this frame.
-        attack: True if the player has just pressed the attack key this frame.
-        pause: True if the player has just pressed the pause key this frame.
-        duck: True if the player has just pressed the duck key this frame.
-    """
-    def __init__(self, move_left=False, move_right=False, jump=False, attack=False, pause=False, duck=False):
-        self.move_left = move_left
-        self.move_right = move_right
-        self.jump = jump
-        self.attack = attack
-        self.pause = pause
-        self.duck = duck  # Placeholder for ducking input, to be implemented later
+    move_left: bool = False
+    move_right: bool = False
+    jump: bool = False
+    attack: bool = False
+    pause: bool = False
+    duck: bool = False
 
-def read_commands(events) -> Commands:
-    """Reads the current input state and returns a Commands object."""
 
-    # if key stroke is pressed, jump or attack]
-    keys = pygame.key.get_pressed()
-    cmds = Commands(
-        move_left=keys[pygame.K_LEFT] or keys[pygame.K_a],
-        move_right=keys[pygame.K_RIGHT] or keys[pygame.K_d],
-        duck=keys[pygame.K_DOWN] or keys[pygame.K_s]
-    )
+class InputReader(ABC):
+    """Reads the current frame's input and exposes it as a Commands snapshot."""
 
-    # One-frame actions
-    for event in events:
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                cmds.jump = True
-            elif event.key == pygame.K_f:
-                cmds.attack = True
-            elif event.key == pygame.K_ESCAPE:
-                cmds.pause = True
+    @abstractmethod
+    def poll(self, events: list[pygame.event.Event]) -> None:
+        """Consume this frame's events and refresh the internal snapshot."""
 
-    return cmds
-    
+    @abstractmethod
+    def get_commands(self) -> Commands:
+        """Return the most recently polled commands."""
 
-    
 
+class KeyboardInputReader(InputReader):
+    """Translates physical keyboard state into Commands."""
+
+    _MOVE_LEFT_KEYS = (pygame.K_LEFT, pygame.K_a)
+    _MOVE_RIGHT_KEYS = (pygame.K_RIGHT, pygame.K_d)
+    _DUCK_KEYS = (pygame.K_DOWN, pygame.K_s)
+    _JUMP_KEYS = (pygame.K_SPACE,)
+    _ATTACK_KEYS = (pygame.K_f,)
+    _PAUSE_KEYS = (pygame.K_ESCAPE,)
+
+    def __init__(self) -> None:
+        self._commands = Commands()
+
+    def poll(self, events: list[pygame.event.Event]) -> None:
+        keys = pygame.key.get_pressed()
+        snapshot = Commands(
+            move_left=any(keys[k] for k in self._MOVE_LEFT_KEYS),
+            move_right=any(keys[k] for k in self._MOVE_RIGHT_KEYS),
+            duck=any(keys[k] for k in self._DUCK_KEYS),
+        )
+        for event in events:
+            if event.type != pygame.KEYDOWN:
+                continue
+            if event.key in self._JUMP_KEYS:
+                snapshot.jump = True
+            elif event.key in self._ATTACK_KEYS:
+                snapshot.attack = True
+            elif event.key in self._PAUSE_KEYS:
+                snapshot.pause = True
+        self._commands = snapshot
+
+    def get_commands(self) -> Commands:
+        return self._commands

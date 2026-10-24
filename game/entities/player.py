@@ -1,151 +1,49 @@
-"""Player entity module for managing the stickman character."""
-
-import sys
-import pygame
-import random
-
-from game import config 
+"""Player: a Character driven by an InputReader and a StateMachine."""
+from game import config
+from game.core.physics import PhysicsBody
+from game.core.sprite_set import SpriteSet
+from game.entities.character import Character
+from game.input import InputReader
 from game.logger import get_logger
-from game import input
+from game.states.player_states import IdleState, default_player_states
+from game.states.state_machine import StateMachine
 
 logger = get_logger()
 
-class State:
-    """Player state constants and attack categories."""
-    ATTACKING_TYPES = ["punching", "vodloza"]
-    
-    IDLE = "idle"
-    WALKING = "walking"
-    JUMPING = "jumping"
-    INJURED = "inured"
-    DEAD = "dead"
-    DUCKING = "ducking"
 
-class Player:
-    """The player character (stickman) handling physics, movement, and combat."""
+class Player(Character):
+    """The user-controlled stickman."""
 
-    def __init__(self) -> None:
-        """Initialise player properties and pre-load scaled sprite surfaces."""
-        self.sprites = {}
+    def __init__(self, input_reader: InputReader, start_pos: tuple[int, int]) -> None:
+        sprite_set = SpriteSet(config.STATE_PATHS, config.PLAYER_HEIGHT)
+        physics = PhysicsBody(gravity=config.GRAVITY, jump_force=config.PLAYER_JUMP_FORCE)
+        super().__init__(
+            sprite_set=sprite_set,
+            physics=physics,
+            speed=config.PLAYER_SPEED,
+            start_pos=start_pos,
+            initial_sprite_name=IdleState.name,
+        )
 
-        for state, path in config.STATE_PATHS.items():
-            raw_image = pygame.image.load(path).convert_alpha()
-            scale = config.PLAYER_HEIGHT / raw_image.get_height()
-            new_size = (round(raw_image.get_width() * scale), config.PLAYER_HEIGHT)
-            self.sprites[state] = pygame.transform.scale(raw_image, new_size)
-        
-        logger.info(f"Loaded sprites dictionary keys: {list(self.sprites.keys())}")
-        
-        self.state = State.IDLE
-        self.image = self.sprites[self.state]
-        self.width = self.image.get_width()
-        self.height = self.image.get_height()
-        logger.info(f"Loaded stickman sprite with size {self.width}x{self.height}.")
+        self._input_reader = input_reader
+        self.attack_lunge_speed = 8
+        self._state_machine = StateMachine(
+            default_player_states(), initial=IdleState.name, owner=self
+        )
 
-        self.rect = self.image.get_rect()
-        self.rect.midbottom = (config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT)
-        logger.info(f"Positioned player at {self.rect.topleft} (midbottom: {self.rect.midbottom}).")
+        logger.info(
+            "Player ready at %s (sprites: %s)",
+            self._rect.midbottom,
+            sprite_set.names(),
+        )
 
-        self.speed = config.PLAYER_SPEED
-        self._facing_left = False
+    @property
+    def state_name(self) -> str:
+        return self._state_machine.current_name
 
-        self.velocity_y = 0.0
-        self.jump_force = config.PLAYER_JUMP_FORCE  
-        self.gravity = config.GRAVITY            
-        self.is_grounded = True
-
-        self.attack_timer = 0
-        self.attack_lunge_speed = 8  
-
-    def set_state(self, new_state: str) -> None:
-        """Changes the player state and swaps the displayed image."""
-        if self.state == new_state:
-            return  
-
-        self.state = new_state
-        base_sprite = self.sprites[self.state]
-        
-        if self._facing_left:
-            self.image = pygame.transform.flip(base_sprite, True, False)
-        else:
-            self.image = base_sprite
-            
-        self.width = self.image.get_width()
-        self.height = self.image.get_height()
-        
-        bottom_center = self.rect.midbottom
-        self.rect = self.image.get_rect()
-        self.rect.midbottom = bottom_center
-
-    def move(self, direction: list[int]) -> None:
-        """Handles movement calculation and physics equations."""
-        if self.state in State.ATTACKING_TYPES:
-            lunge_direction = -1 if self._facing_left else 1
-            current_lunge = lunge_direction * max(1, round(self.attack_lunge_speed * (self.attack_timer / config.PLAYER_ATTACK_DURATION)))
-            self.rect.x += current_lunge
-        elif self.state == State.DUCKING:
-            pass
-        else:
-            horizontal_direction = direction[0]
-            self.rect.x += horizontal_direction * self.speed
-            
-            if horizontal_direction < 0 and not self._facing_left:
-                self._facing_left = True
-                self.image = pygame.transform.flip(self.sprites[self.state], True, False)
-            elif horizontal_direction > 0 and self._facing_left:
-                self._facing_left = False
-                self.image = self.sprites[self.state]
-
-        self.rect.x = max(0, min(self.rect.x, config.SCREEN_WIDTH - self.width))
-            
-        vertical_direction = direction[1]
-
-        if vertical_direction < 0 and self.is_grounded and self.state not in State.ATTACKING_TYPES and self.state != State.DUCKING:
-            self.velocity_y = self.jump_force
-            self.is_grounded = False
-
-        if not self.is_grounded:
-            self.velocity_y += self.gravity
-            self.rect.y += round(self.velocity_y)
-
-        if self.rect.bottom >= config.SCREEN_HEIGHT:
-            self.rect.bottom = config.SCREEN_HEIGHT
-            self.velocity_y = 0.0
-            self.is_grounded = True
-
-    def update(self, commands) -> None:
-        """Updates physics processing, command inputs, and timers every frame."""
-        direction = [0, 0]
-
-        if commands.move_left:
-            direction[0] -= 1
-        if commands.move_right:
-            direction[0] += 1
-        if commands.jump:
-            direction[1] -= 1
-
-        if self.state in State.ATTACKING_TYPES:
-            self.attack_timer -= 1
-            if self.attack_timer <= 0:
-                self.set_state(State.IDLE)  
-
-        if commands.attack and self.state not in State.ATTACKING_TYPES:
-            self.attack_timer = config.PLAYER_ATTACK_DURATION
-            random_attack = random.choice(State.ATTACKING_TYPES)
-            self.set_state(random_attack)
-
-        if self.state not in State.ATTACKING_TYPES:
-            if commands.duck and self.is_grounded:
-                self.set_state(State.DUCKING)
-            elif not self.is_grounded:
-                self.set_state(State.JUMPING)
-            elif direction[0] != 0:
-                self.set_state(State.WALKING)
-            else:
-                self.set_state(State.IDLE)
-
-        self.move(direction)
-
-    def draw(self, surface: pygame.Surface) -> None:
-        """Draw the player sprite on the given surface."""
-        surface.blit(self.image, self.rect)
+    def update(self) -> None:
+        commands = self._input_reader.get_commands()
+        self._state_machine.update(commands)
+        self._refresh_sprite(self._state_machine.current_name)
+        self._apply_gravity()
+        self._clamp_horizontally()
